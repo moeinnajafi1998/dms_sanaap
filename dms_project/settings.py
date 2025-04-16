@@ -43,6 +43,9 @@ INSTALLED_APPS = [
 INSTALLED_APPS.append("documents_app")
 
 # third parties
+INSTALLED_APPS.append("rest_framework")
+INSTALLED_APPS.append("corsheaders")
+INSTALLED_APPS.append("drf_yasg")
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
