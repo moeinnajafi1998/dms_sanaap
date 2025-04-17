@@ -46,7 +46,7 @@ INSTALLED_APPS.append("documents_app")
 INSTALLED_APPS.append("rest_framework")
 INSTALLED_APPS.append("corsheaders")
 INSTALLED_APPS.append("drf_yasg")
-INSTALLED_APPS.append('storages')
+INSTALLED_APPS.append('django_minio_backend')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -125,16 +125,31 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# MinIO settings for django-minio-backend
+from datetime import timedelta
+from typing import List, Tuple
 
-AWS_ACCESS_KEY_ID = 'minioadmin'
-AWS_SECRET_ACCESS_KEY = 'minioadmin'
-AWS_STORAGE_BUCKET_NAME = 'documents'
-AWS_S3_ENDPOINT_URL = 'http://localhost:9000'
-AWS_S3_USE_SSL = False
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+STORAGES = {  # -- ADDED IN Django 5.1
+    "default": {
+        "BACKEND": "django_minio_backend.models.MinioBackend",
+    },
+    "staticfiles": {
+        "BACKEND": "django_minio_backend.models.MinioBackendStatic",
+    },
+}
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+MINIO_ENDPOINT = '127.0.0.1:9000'
+MINIO_ACCESS_KEY = 'minioadmin'
+MINIO_SECRET_KEY = 'minioadmin'
+MINIO_USE_HTTPS = False
+MINIO_URL_EXPIRY_HOURS = timedelta(days=1)  # Default is 7 days (longest) if not defined
+MINIO_CONSISTENCY_CHECK_ON_START = True
+MINIO_PRIVATE_BUCKETS = [
+    'documents',
+]
+MINIO_PUBLIC_BUCKETS = []
+MINIO_POLICY_HOOKS: List[Tuple[str, dict]] = []
+MINIO_BUCKET_CHECK_ON_SAVE = True  # Default: True // Creates bucket if missing, then save
+
+MINIO_STATIC_FILES_BUCKET = 'static'  # replacement for STATIC_ROOT
+MINIO_PRIVATE_BUCKETS.append(MINIO_STATIC_FILES_BUCKET)
