@@ -4,6 +4,7 @@ botocore==1.37.34
 Django==5.2
 django-cors-headers==4.7.0
 django-environ==0.12.0
+django-storages==1.14.6
 djangorestframework==3.16.0
 drf-yasg==1.21.10
 inflection==0.5.1

@@ -46,6 +46,7 @@ INSTALLED_APPS.append("documents_app")
 INSTALLED_APPS.append("rest_framework")
 INSTALLED_APPS.append("corsheaders")
 INSTALLED_APPS.append("drf_yasg")
+INSTALLED_APPS.append('storages')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -124,7 +125,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
+AWS_ACCESS_KEY_ID = 'minioadmin'
+AWS_SECRET_ACCESS_KEY = 'minioadmin'
+AWS_STORAGE_BUCKET_NAME = 'documents'
+AWS_S3_ENDPOINT_URL = 'http://localhost:9000'
+AWS_S3_USE_SSL = False
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
