@@ -5,23 +5,31 @@ from minio import Minio
 from datetime import timedelta
 import uuid
 from minio.error import S3Error
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 from .models import Document
 from .serializers import DocumentSerializer
 from .permissions import IsOwnerOrAdminOrEditor, IsAdmin,IsEditor
 from .pagination import DocumentPagination
 
+
 class DocumentListView(generics.ListAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
     pagination_class = DocumentPagination
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
+    filterset_fields = ['owner', 'title']  
+    # ordering_fields = ['created_at', 'title'] 
 
     def get_queryset(self):
         user = self.request.user
+        queryset = Document.objects.all()
+
         if user.groups.filter(name='admin').exists():
-            return Document.objects.all()
-        return Document.objects.filter(owner=user)
+            return queryset
+        return queryset.filter(owner=user)
 
 
 class DocumentCreateView(generics.CreateAPIView):
