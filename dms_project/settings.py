@@ -140,7 +140,7 @@ STORAGES = {  # -- ADDED IN Django 5.1
         "BACKEND": "django_minio_backend.models.MinioBackend",
     },
     "staticfiles": {
-        "BACKEND": "django_minio_backend.models.MinioBackendStatic",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
@@ -159,3 +159,15 @@ MINIO_BUCKET_CHECK_ON_SAVE = True  # Default: True // Creates bucket if missing,
 
 MINIO_STATIC_FILES_BUCKET = 'static'  # replacement for STATIC_ROOT
 MINIO_PRIVATE_BUCKETS.append(MINIO_STATIC_FILES_BUCKET)
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'JWT Authorization header. Example: "Bearer <your_token>"',
+        }
+    },
+    'USE_SESSION_AUTH': False,  
+}
