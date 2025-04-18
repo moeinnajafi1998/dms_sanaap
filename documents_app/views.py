@@ -11,7 +11,7 @@ from .serializers import DocumentSerializer
 from .permissions import IsOwnerOrAdminOrEditor, IsAdmin,IsEditor
 from .pagination import DocumentPagination
 
-class DocumentListCreateView(generics.ListCreateAPIView):
+class DocumentListView(generics.ListAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
@@ -20,8 +20,14 @@ class DocumentListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.groups.filter(name='admin').exists():
-            return Document.objects.all()  
-        return Document.objects.filter(owner=user)  
+            return Document.objects.all()
+        return Document.objects.filter(owner=user)
+
+
+class DocumentCreateView(generics.CreateAPIView):
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
