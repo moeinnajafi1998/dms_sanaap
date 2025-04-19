@@ -20,7 +20,7 @@ To get started with this project, clone the repository and set up the environmen
 
 ```bash
 git clone https://github.com/moeinnajafi1998/dms_sanaap.git
-cd Sanaap
+cd dms_sanaap
 ```
 
 ### Environment Variables
