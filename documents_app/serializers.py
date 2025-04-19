@@ -8,7 +8,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         exclude = ["file",]
         read_only_fields = ('owner', 'created_at', 'updated_at')
 
-class DocumentCreateSerializer(serializers.ModelSerializer):
+class DocumentCreateUpdateSerializer(serializers.ModelSerializer):
     file = serializers.FileField(write_only=True, required=True)
     class Meta:
         model = Document
