@@ -9,7 +9,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
 from .models import Document
-from .serializers import DocumentSerializer
+from .serializers import DocumentSerializer,DocumentCreateSerializer
 from .permissions import IsOwnerOrAdminOrEditor, IsAdmin,IsEditor
 from .pagination import DocumentPagination
 
@@ -34,7 +34,7 @@ class DocumentListView(generics.ListAPIView):
 
 class DocumentCreateView(generics.CreateAPIView):
     queryset = Document.objects.all()
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentCreateSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
 
     def perform_create(self, serializer):

@@ -7,3 +7,10 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         exclude = ["file",]
         read_only_fields = ('owner', 'created_at', 'updated_at')
+
+class DocumentCreateSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(write_only=True, required=True)
+    class Meta:
+        model = Document
+        fields = "__all__"
+        read_only_fields = ('owner', 'created_at', 'updated_at')
