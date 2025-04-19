@@ -1,64 +1,87 @@
 # python manage.py test documents_app.tests.test_document_update_api
 
-from unittest import mock
-from rest_framework.test import APITestCase
-from rest_framework import status
-from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from documents_app.models import Document
+from django.contrib.auth.models import Group
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import RefreshToken
+from ..models import Document  # adjust path if needed
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 User = get_user_model()
 
-class DocumentUpdateViewTest(APITestCase):
+class DocumentUpdateAPITestCase(APITestCase):
     def setUp(self):
-        self.owner = User.objects.create_user(username='owner', password='pass')
-        self.other_user = User.objects.create_user(username='other', password='pass')
-        self.admin = User.objects.create_user(username='admin', password='pass')
-        self.admin.groups.create(name='admin')
+        # Create groups
+        self.admin_group = Group.objects.create(name='admin')
+        self.editor_group = Group.objects.create(name='editor')
 
-        self.doc = Document.objects.create(
-            title='Old Title',
-            description='Old description',
-            owner=self.owner,
-            file='documents/oldfile.txt'
+        # Create users
+        self.admin_user = User.objects.create_user(username='admin', password='pass123')
+        self.editor_user = User.objects.create_user(username='editor', password='pass123')
+        self.regular_user = User.objects.create_user(username='user', password='pass123')
+
+        # Assign groups
+        self.admin_user.groups.add(self.admin_group)
+        self.editor_user.groups.add(self.editor_group)
+
+        # Create document
+        self.document = Document.objects.create(
+            title='Test Document',
+            description='Original description',
+            file=SimpleUploadedFile("file.txt", b"file_content"),
+            owner=self.admin_user
         )
 
-        self.url = reverse('document-update', kwargs={'pk': self.doc.pk})
+        self.update_url = reverse('document-update', kwargs={'pk': self.document.pk})  # adjust name if needed
 
     def authenticate(self, user):
         refresh = RefreshToken.for_user(user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(refresh.access_token)}')
+        access_token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
 
-    @mock.patch('documents_app.views.Minio')
-    def test_owner_can_update_with_file(self, mock_minio):
-        self.authenticate(self.owner)
-
-        new_file = SimpleUploadedFile('newfile.txt', b'updated content', content_type='text/plain')
-
+    def test_admin_user_can_update_document(self):
+        self.authenticate(self.admin_user)
         data = {
             'title': 'Updated Title',
             'description': 'Updated description',
-            'file': new_file
+            'file': SimpleUploadedFile("newfile.txt", b"new file content"),
+            'owner': self.admin_user.pk
         }
-
-        response = self.client.patch(self.url, data, format='multipart')
+        response = self.client.put(self.update_url, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], 'Updated Title')
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.title, 'Updated Title')
 
-    def test_unauthenticated_user_cannot_update(self):
-        response = self.client.patch(self.url, {'title': 'New title'})
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_editor_user_can_update_document(self):
+        self.authenticate(self.editor_user)
+        data = {
+            'title': 'Editor Updated',
+            'description': 'Changed by editor',
+            'file': SimpleUploadedFile("editorfile.txt", b"editor content"),
+            'owner': self.admin_user.pk
+        }
+        response = self.client.put(self.update_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_non_owner_non_admin_cannot_update(self):
-        self.authenticate(self.other_user)
-        response = self.client.patch(self.url, {'title': 'Hack title'})
+    def test_regular_user_cannot_update_document(self):
+        self.authenticate(self.regular_user)
+        data = {
+            'title': 'Hacker Title',
+            'description': 'I should not be allowed',
+            'file': SimpleUploadedFile("badfile.txt", b"bad content"),
+            'owner': self.admin_user.pk
+        }
+        response = self.client.put(self.update_url, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    @mock.patch('documents_app.views.Minio')
-    def test_admin_can_update(self, mock_minio):
-        self.authenticate(self.admin)
-        response = self.client.patch(self.url, {'title': 'Admin updated'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], 'Admin updated')
+    def test_unauthenticated_user_cannot_update_document(self):
+        data = {
+            'title': 'Anonymous Edit',
+            'description': 'No login',
+            'file': SimpleUploadedFile("anon.txt", b"anon content"),
+            'owner': self.admin_user.pk
+        }
+        response = self.client.put(self.update_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

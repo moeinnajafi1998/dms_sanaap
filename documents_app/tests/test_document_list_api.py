@@ -3,51 +3,78 @@
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from documents_app.models import Document
+from django.contrib.auth.models import Group
 from rest_framework import status
 from django.urls import reverse
+from documents_app.models import Document
 
 User = get_user_model()
 
 class DocumentListViewTest(APITestCase):
     def setUp(self):
+        # Ensure groups exist
+        self.admin_group, _ = Group.objects.get_or_create(name='admin')
+        self.viewer_group, _ = Group.objects.get_or_create(name='viewer')
+        self.editor_group, _ = Group.objects.get_or_create(name='editor')
+
+        # Users
         self.admin_user = User.objects.create_user(username='admin', password='adminpass')
+        self.viewer_user = User.objects.create_user(username='viewer', password='viewerpass')
         self.editor_user = User.objects.create_user(username='editor', password='editorpass')
 
-        # Assign group names (you must have these groups created in test or fixtures)
-        self.admin_user.groups.create(name='admin')
-        self.editor_user.groups.create(name='editor')
+        self.admin_user.groups.add(self.admin_group)
+        self.viewer_user.groups.add(self.viewer_group)
+        self.editor_user.groups.add(self.editor_group)
 
-        # Create documents
+        # Documents
         self.doc1 = Document.objects.create(owner=self.admin_user, title='Admin Doc')
-        self.doc2 = Document.objects.create(owner=self.editor_user, title='Editor Doc')
+        self.doc2 = Document.objects.create(owner=self.viewer_user, title='Viewer Doc')
+
+        self.url = reverse('document-list')
 
     def authenticate(self, user):
         refresh = RefreshToken.for_user(user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(refresh.access_token)}')
 
-    def test_admin_sees_all_documents(self):
+    def test_admin_can_see_all_documents(self):
         self.authenticate(self.admin_user)
-        response = self.client.get(reverse('document-list'))
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 2)
 
-    def test_editor_sees_own_documents_only(self):
-        self.authenticate(self.editor_user)
-        response = self.client.get(reverse('document-list'))
+    def test_viewer_sees_only_their_documents(self):
+        self.authenticate(self.viewer_user)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['title'], 'Editor Doc')
+        self.assertEqual(response.data['results'][0]['title'], 'Viewer Doc')
+
+    def test_editor_is_forbidden(self):
+        self.authenticate(self.editor_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_filter_by_owner(self):
         self.authenticate(self.admin_user)
-        response = self.client.get(reverse('document-list'), {'owner': self.editor_user.id})
+        response = self.client.get(self.url, {'owner': self.viewer_user.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['title'], 'Viewer Doc')
 
-    def test_pagination_structure(self):
+    def test_filter_by_title(self):
         self.authenticate(self.admin_user)
-        response = self.client.get(reverse('document-list'))
-        self.assertIn('total_items', response.data)
-        self.assertIn('total_pages', response.data)
-        self.assertIn('current_page', response.data)
+        response = self.client.get(self.url, {'title': 'Admin Doc'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['owner'], self.admin_user.id)
+
+    def test_pagination_fields_exist(self):
+        self.authenticate(self.admin_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for field in ['total_items', 'total_pages', 'current_page', 'results']:
+            self.assertIn(field, response.data)
+
+    def test_unauthenticated_user_cannot_access_list(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
