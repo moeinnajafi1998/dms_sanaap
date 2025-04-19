@@ -7,14 +7,14 @@ from django.core.files.storage import default_storage
 
 from .models import Document
 from .serializers import DocumentSerializer,DocumentCreateUpdateSerializer
-from .permissions import IsOwnerOrAdminOrEditor, IsAdmin,IsEditor
+from .permissions import IsOwnerOrAdminOrEditor, IsAdmin,IsEditor,IsViewer,IsViewerOrAdmin,IsAdminOrEditor
 from .pagination import DocumentPagination
 
 
 class DocumentListView(generics.ListAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
+    permission_classes = [permissions.IsAuthenticated,IsViewerOrAdmin]
     pagination_class = DocumentPagination
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_fields = ['owner', 'title']  
@@ -32,7 +32,7 @@ class DocumentListView(generics.ListAPIView):
 class DocumentCreateView(generics.CreateAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentCreateUpdateSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrEditor]
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -41,12 +41,13 @@ class DocumentCreateView(generics.CreateAPIView):
 class DocumentRetrieveView(generics.RetrieveAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
+    permission_classes = [permissions.IsAuthenticated,IsViewerOrAdmin]
+    
+    
 class DocumentUpdateView(generics.UpdateAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentCreateUpdateSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrEditor]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrEditor]
 
     def perform_update(self, serializer):
         serializer.save()
@@ -63,7 +64,7 @@ class DocumentDestroyView(generics.DestroyAPIView):
         super().perform_destroy(instance)
 
 class GenerateDocumentURLView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated,IsViewerOrAdmin]
     def get(self, request, document_id):
         try:
             document = Document.objects.get(id=document_id)
