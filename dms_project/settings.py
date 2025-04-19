@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 
 # apps 
 INSTALLED_APPS.append("documents_app")
+INSTALLED_APPS.append("usermanagement")
 
 # third parties
 INSTALLED_APPS.append("rest_framework")
