@@ -1,6 +1,10 @@
 from pathlib import Path
 from datetime import timedelta
-
+import os
+from dotenv import load_dotenv
+from typing import List, Tuple
+# Load environment variables from .env
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,10 +13,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^lr57!#w7hbu$h&vo$^p)0a3r19t@a)k-+3-pf3g9ml3)0o#23'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = []
 
@@ -74,10 +78,15 @@ WSGI_APPLICATION = 'dms_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
+
 
 
 # Password validation
@@ -132,8 +141,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 # MinIO settings for django-minio-backend
-from datetime import timedelta
-from typing import List, Tuple
 
 STORAGES = {  # -- ADDED IN Django 5.1
     "default": {
@@ -144,10 +151,10 @@ STORAGES = {  # -- ADDED IN Django 5.1
     },
 }
 
-MINIO_ENDPOINT = '127.0.0.1:9000'
-MINIO_ACCESS_KEY = 'minioadmin'
-MINIO_SECRET_KEY = 'minioadmin'
-MINIO_USE_HTTPS = False
+MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
+MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
+MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY')
+MINIO_USE_HTTPS = os.getenv('MINIO_USE_HTTPS', 'False') == 'True'
 MINIO_URL_EXPIRY_HOURS = timedelta(days=1)  # Default is 7 days (longest) if not defined
 MINIO_CONSISTENCY_CHECK_ON_START = True
 MINIO_PRIVATE_BUCKETS = [
