@@ -1,3 +1,5 @@
+# python manage.py test documents_app.tests.test_document_list_api
+
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model

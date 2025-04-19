@@ -1,4 +1,5 @@
-import io
+# python manage.py test documents_app.tests.test_document_update_api
+
 from unittest import mock
 from rest_framework.test import APITestCase
 from rest_framework import status
