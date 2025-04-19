@@ -21,12 +21,8 @@ class IsOwnerOrAdminOrEditor(permissions.BasePermission):
         return obj.owner == request.user
 
 class IsAdminOrEditor(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.user.groups.filter(name='admin').exists():
-            return True
-        if request.user.groups.filter(name='editor').exists():
-            return True
-        return False
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name__in=['admin', 'editor']).exists()
 
 class IsViewerOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
